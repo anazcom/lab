@@ -1,0 +1,7 @@
+{
+    "name": "Devcontainer using image",
+    "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu",
+    "forwardPorts": [
+        "8080:8080"
+    ]
+}
