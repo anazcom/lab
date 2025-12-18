@@ -1,0 +1,13 @@
+{
+    "name": "Devcontainer from Compose File",
+    "dockerComposeFile": "docker-compose.yaml",
+    "service": "app",
+    "forwardPorts": [
+        "8080:8080",
+        "5432:5432"
+    ],
+    "workspaceFolder": "/workspaces",
+    "mounts": [
+        "type=bind,source=${localWorkspaceFolder},target=/workspaces"
+    ]
+}

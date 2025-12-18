@@ -1,0 +1,26 @@
+services:
+  app:
+    image: anazcom/dev-core:trixie-slim
+    container_name: example-dev
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+    ports:
+      - "8080:8080"
+    networks:
+      - example-network
+  db:
+    image: postgres:18.1-bookworm
+    container_name: example-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: sa
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: postgres
+    networks:
+      - example-network
+
+networks:
+  example-network:
+    driver: bridge  
