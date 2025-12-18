@@ -1,0 +1,10 @@
+{
+    "name": "Devcontainer using Dockerfile",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "."
+    },
+    "forwardPorts": [
+        "8080:8080"
+    ]
+}
