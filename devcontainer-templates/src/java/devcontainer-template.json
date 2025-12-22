@@ -1,0 +1,32 @@
+{
+    "id": "java-template",
+    "name": "Java Development Environment",
+    "image": "anazcom/dev-core:trixie-slim",
+    "version": "1.0.0",
+    "description": "A development container template for basic Java development.",
+    "options": {
+        "javaVersion": {
+            "type": "string",
+            "description": "Select the Java version to install",
+            "default": "21",
+            "enum": [
+                "21",
+                "latest"
+            ]
+        },
+        "mavenInstall": {
+            "type": "boolean",
+            "description": "Install Maven build tool",
+            "default": true
+        },
+        "mavenVersion": {
+            "type": "string",
+            "description": "Select the Maven version to install",
+            "default": "3.8.6",
+            "enum": [
+                "3.8.6",
+                "latest"
+            ]
+        }
+    }
+}

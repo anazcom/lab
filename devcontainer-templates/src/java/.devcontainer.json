@@ -1,0 +1,20 @@
+{
+    "name": "Devcontainer - Java",
+    "image": "anazcom/dev-core:trixie-slim",
+    "features": {
+        "ghcr.io/devcontainers/features/java:1": {
+            "version": "${templateOption:javaVersion}",
+            "installMaven": "${templateOption:mavenInstall}",
+            "mavenVersion": "${templateOption:mavenVersion}"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "vscjava.vscode-java-pack",
+                "vmware.vscode-boot-dev-pack",
+                "redhat.vscode-xml"
+            ]
+        }
+    }
+}
