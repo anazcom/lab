@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdio.h>
 
 int strCmp(char *s1, char *s2) {
@@ -13,56 +12,35 @@ int strCmp(char *s1, char *s2) {
   return 1;
 }
 
-/*
- * Open and close a file specified by path or
- * stdin if path = "stdin"
- * */
-void withFile(char *path, int feof, int fnumber, int start,
-              int handler(FILE *, int, int, int)) {
-  FILE *f;
-
-  if (strCmp(path, "stdin") == 0) {
-    printf("mycat: opened stdin\n");
-    f = stdin;
-  } else {
-    f = fopen(path, "r");
-    printf("mycat: opened file\n");
-  }
-
-  if (f == NULL) {
-    perror("ERROR: mycat - file not found\n");
-  }
-
-  handler(f, feof, fnumber, start);
-  fclose(f);
-}
-
-int printFile(FILE *f, int feof, int fnumber, int start) {
+int printFile(FILE *f, int feol, int fnumber, int *linesPrinted) {
 
   int bytesRead;
   char buffer[1024];
-  int lines = start;
-
-  if (fnumber > 0) {
-    printf("%d\t", ++lines);
-  }
+  int lines = *linesPrinted;
+  int atStart = 1;
 
   while ((bytesRead = fread(buffer, 1, sizeof(buffer) - 1, f)) > 0) {
 
     buffer[bytesRead] = '\0';
-    printf("reading %d bytes", bytesRead);
     for (int i = 0; i < bytesRead; i++) {
-      if (buffer[i] == '\n' && feof > 0) {
-        printf("$");
+
+      if (fnumber > 0 && atStart == 1) {
+        printf("%d\t", ++lines);
+        atStart = 0;
+      }
+
+      if (buffer[i] == '\n') {
+        atStart = 1;
+        if (feol > 0) {
+          printf("$");
+        }
       }
       printf("%c", buffer[i]);
-      if (buffer[i] == '\n' && fnumber > 0) {
-        printf("%d\t", ++lines);
-      }
     }
   }
 
-  return lines - start;
+  *linesPrinted = lines;
+  return 0;
 }
 
 void printUsage() { printf("mycat -[ne] [file...]\n"); }
@@ -99,17 +77,24 @@ Config parse(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
 
   Config cfg = parse(argc, argv);
-  printf("EOF: %d Number: %d PCount: %d\n", cfg.eof, cfg.number,
-         cfg.pathsCount);
+  int lines = 0;
 
   if (cfg.pathsCount == 0) {
-    printf("mycat: no paths provided. Defaulting to stdin\n");
-    printFile(stdin, cfg.eof, cfg.number, 0);
+    printFile(stdin, cfg.eof, cfg.number, &lines);
     return 0;
   }
 
   for (int i = 0; i < cfg.pathsCount; i++) {
-    withFile(cfg.paths[i], cfg.eof, cfg.number, 0, printFile);
+
+    FILE *f = fopen(cfg.paths[i], "r");
+
+    if (f == NULL) {
+      perror("ERROR: mycat - file not found");
+      return 1;
+    }
+
+    printFile(f, cfg.eof, cfg.number, &lines);
+    fclose(f);
   }
   return 0;
 }
