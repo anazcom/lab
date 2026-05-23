@@ -1,11 +1,19 @@
-CC = gcc
+CC = clang
 CFLAGS = -Wall -Wextra -g -fsanitize=address
 
-vec_test: vec.c vec_test.c
-	$(CC) $(CFLAGS) vec.c vec_test.c -o vec_test
+TEST_SRCS := $(wildcard test_*.c)
+TEST_BINS := $(TEST_SRCS:.c=)
 
-test: vec_test
-	./vec_test
+.PHONY: test clean
+test: $(TEST_BINS)
+	@echo "\n--- Test Execution ----"
+	@for t in $(TEST_BINS); do ./$$t; done
 
-clean:
-	rm -f vec_test
+test_%: test_%.o list.o
+	$(CC) $(CFLAGS) -o $@ $^
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<
+
+clean: 
+	rm -f *.o *.d $(TEST_BINS)

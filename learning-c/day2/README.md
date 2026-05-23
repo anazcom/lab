@@ -85,7 +85,6 @@ typedef struct {
     int  *data;
 } Vec;
 ```
-
 Structs are laid out contiguously in memory. Members are accessed with `.` (direct) or `->` (through pointer). Padding may be inserted between members for alignment — don't assume sizeof(struct) == sum of member sizes.
 
 ### Testing in C — building a test runner
