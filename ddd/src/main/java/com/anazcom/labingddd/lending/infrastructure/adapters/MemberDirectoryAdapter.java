@@ -1,4 +1,4 @@
-package com.anazcom.labingddd.lending.infrastructure;
+package com.anazcom.labingddd.lending.infrastructure.adapters;
 
 import java.util.Optional;
 

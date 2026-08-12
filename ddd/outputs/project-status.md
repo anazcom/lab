@@ -1,6 +1,6 @@
 # Library DDD Lab — Project Status
 
-_Last updated: 2026-08-07_
+_Last updated: 2026-08-12 (afternoon)_
 
 ## Goal
 
@@ -14,34 +14,34 @@ Learn Domain-Driven Design hands-on by building a small Library application in J
 - REST: `GET /books/{id}` in `BookController`, backed directly by `BookRepository` (no use case needed — pure read).
 - Full `MockMvc` test suite using a fake repository registered via `@TestConfiguration` (no mocks).
 
-**Lending (Loan) — domain modeled, one use case implemented, not yet persisted**
-- `Loan` aggregate, `LoanId`, `LoanPeriod` (value object, validates `startDate <= dueDate`), `LoanStatus` enum (`ACTIVE`, `RETURNED`, `OVERDUE`). `isOverdue()` is intentionally no-arg (uses `LocalDate.now()` internally) — deliberate choice to avoid callers controlling "today."
-- `BorrowBookUseCase`: orchestrates `Book`/`Member`/`Loan` repositories, full fake-based test suite (`InMemory*Repository`).
+**Lending (Loan) — borrowing flow closed end to end; return flow not started**
+- `Loan` aggregate, `LoanId`, `LoanPeriod` (value object, validates `startDate <= dueDate`), `LoanStatus` enum (`ACTIVE`, `RETURNED`, `OVERDUE`). `isOverdue()` is intentionally no-arg (uses `LocalDate.now()` internally) — deliberate choice to avoid callers controlling "today." `markReturned()` exists on the aggregate but nothing calls it yet.
+- **Cross-context access via lending-owned ports, not other contexts' repositories.** `BorrowBookUseCase` depends on `BookCatalog` and `MemberDirectory` (interfaces defined in `lending.domain`), not on `catalog.domain.BookRepository`/`member.domain.MemberRepository` directly. `BookCatalogAdapter` and `MemberDirectoryAdapter` (in `lending.infrastructure`) translate from the other contexts' repositories — `MemberDirectoryAdapter` maps a `Member` down to a `MemberBorrowingProfile(memberId, canBorrow)` record, an anti-corruption layer so lending only sees the slice of Member it needs.
+- New domain exceptions: `BookAlreadyOnLoanException`, `MemberCannotBorrowException`.
+- `BorrowBookUseCase`: checks the book exists, the member can borrow, and the book has no active loan (`hasActiveLoanForBook`) before creating a `Loan`. Full fake-based test suite (`InMemory*` fakes for `BookCatalog`, `MemberDirectory`, `LoanRepository`), 5 tests.
+- Persistence: `LoanJpaEntity` is fully mapped — `LoanStatus` via `@Enumerated(EnumType.STRING)` on the domain enum directly, `LoanPeriod` flattened into plain `start_date`/`due_date` columns (the flatten-vs-`@Embeddable` decision was resolved in favor of flattening, consistent with how `Isbn` is mapped), `bookId`/`memberId` as plain string columns (deliberately not `@ManyToOne`). `LoanRepositoryAdapter` + `SpringDataLoanRepository` (with `existsByBookIdAndStatus`) implement `LoanRepository`; `DataIntegrityViolationException` translated to `DomainRepositoryException`.
+- REST: `POST /loans` wired to `BorrowBookUseCase` via `LoanController`. Full `MockMvc` test suite (`LoanControllerTest`, 5 tests: 200 on valid ids, 400 on unknown book, 400 on unknown member, 409 when the member can't borrow, 409 when the book already has an active loan) — same no-mocks style as `BookControllerTest`, but since `@WebMvcTest` only boots the web slice (it won't auto-create the `@Service` `BorrowBookUseCase` or find bean definitions for the `BookCatalog`/`MemberDirectory`/`LoanRepository` ports), the test's `@TestConfiguration` explicitly declares `InMemoryBookCatalog`/`InMemoryMemberDirectory`/`InMemoryLoanRepository` as beans and wires a real `BorrowBookUseCase` on top of them. The three `InMemory*` fakes (originally written for `BorrowBookUseCaseTest`) gained a `clear()` method so they can be reset per test and reused across both test classes.
 
 **Member — domain modeled only, not yet persisted**
 - `Member` aggregate, `MemberId`, `Email` (value object with a corrected validation regex), `MembershipStatus`, `suspend()`/`reactivate()`/`canBorrow()`.
+- `MemberRepository` port defined in `member.domain`, but no `MemberJpaEntity`/adapter — the only implementation is the in-memory test fake, consumed indirectly through `MemberDirectoryAdapter`.
 
 **Cross-cutting**
 - `shared.domain.Ids` — shared non-blank validation for all ID value objects.
 - `shared.domain.DomainValidationException` / `DomainStateException` — replaced raw `IllegalArgumentException`/`IllegalStateException` across the whole domain, so the domain layer stays framework-free while still expressing *why* something failed.
-- `shared.infrastructure.GlobalRestExceptionHandler` (`@RestControllerAdvice`) — translates domain exceptions to `ProblemDetail` responses: `BookNotFoundException` → 404, `DomainValidationException` → 400.
+- `shared.infrastructure.GlobalRestExceptionHandler` (`@RestControllerAdvice`) — translates domain exceptions to `ProblemDetail` responses: `BookNotFoundException`/`MemberNotFoundException` → 404, `BookAlreadyOnLoanException`/`MemberCannotBorrowException` → 409, `DomainValidationException`/`DomainStateException` → 400, `DomainRepositoryException` and any other uncaught `Exception` → 500.
 - `ArchitectureTests` (ArchUnit) — fails the build if anything in `..domain..` depends on Spring/Jakarta persistence packages.
-- 12 tests passing across `BookControllerTest`, `ArchitectureTests`, `EmailTest`, `BorrowBookUseCaseTest`.
+- 17 tests passing: `ArchitectureTests` (2), `BookControllerTest` (2), `EmailTest` (3), `BorrowBookUseCaseTest` (5), `LoanControllerTest` (5). (Previous count of 13 was wrong — `BookControllerTest` has 2 `@Test` methods, not 3.)
 
 ## Pending / In Progress
 
-- **`LoanJpaEntity` is a bare skeleton** (`@Entity` + `id` only). Needs:
-  - `LoanStatus` → `@Enumerated(EnumType.STRING)` directly on the domain enum type (no extra class needed).
-  - `LoanPeriod` → decision not yet made: flatten to two plain columns (consistent with how `Isbn` was mapped) vs. a proper `@Embeddable`/`@Embedded`.
-  - `bookId`/`memberId` → plain string columns, deliberately **not** `@ManyToOne`, to keep `Loan` from navigating into other aggregates.
-- **Foreign key enforcement — open design decision.** Established that JPA has no `@Table(foreignKeys=...)`; a named FK constraint requires either:
-  1. A "shadow" read-only `@ManyToOne`/`@JoinColumn(foreignKey=...)` alongside the plain ID column (DB constraint, no real ORM navigation used in code), or
-  2. Dropping Hibernate auto-DDL for a hand-written `schema.sql` (`ddl-auto=none`), or
-  3. Not enforcing it at the DB level at all, relying instead on an application-level guard (e.g. a future "remove book" use case checking `hasActiveLoanForBook` before allowing deletion) — the more idiomatic DDD answer, since cross-aggregate invariants are an application responsibility, not something the aggregate or schema guarantees for you.
-  - Leaning toward doing **both**: an application-level guard as the real rule, plus a DB constraint as a fail-fast backstop, since this project is a single shared H2 database. Not yet implemented.
-- `LoanRepositoryAdapter` / `SpringDataLoanRepository` — not created.
+- **No `GET /loans` endpoint** (or any read path for loans).
+- **No "return book" use case.** `Loan.markReturned()` exists on the aggregate but is currently unreachable from any use case or endpoint.
+- **Foreign key enforcement — decision resolved: no DB-level FK, application-level guard only.** `Loan → Book`/`Loan → Member` cross both aggregate and bounded-context boundaries, and cross-aggregate invariants are a DDD application-layer responsibility, not something the schema should enforce — so no `@ManyToOne`/`@JoinColumn(foreignKey=...)` shadow mapping and no hand-written `schema.sql` are planned. Not implemented yet because there's nothing to guard: no "remove book" use case exists at all (see below), so no path can currently orphan a `Loan`.
+  - **Known tradeoff of skipping the DB backstop:** once a "remove book" use case exists, a naive check-then-act guard (`hasActiveLoanForBook` before delete) has a TOCTOU race — a `Loan` could be created between the check and the delete, with no FK to catch it. Not closing this race for now (acceptable for a single-user learning app); revisit if it ever matters. Options considered, for when it does:
+    1. Push the invariant into the `Book` aggregate itself (e.g. an `onLoan`/`available` flag flipped transactionally by `BorrowBookUseCase`, possibly via a `LoanCreatedEvent` handled synchronously in the same transaction) — closes the race, but adds a second source of truth that must stay in sync with `Loan` state.
+    2. Wrap the cross-aggregate check + delete in one DB transaction with explicit locking (`SERIALIZABLE` isolation or `SELECT ... FOR UPDATE` on the relevant `Loan` rows) — a per-operation concurrency control, not a permanent declarative constraint, so it doesn't conflict with the no-FK stance.
+  - **Decision for the "remove book" use case when it's built:** query `hasActiveLoanForBook` directly, mirroring the existing `BookCatalog`/`MemberDirectory` ACL pattern in the other direction — a `LoanLookup`-style port owned by `catalog.domain`, implemented by an adapter delegating to `lending.LoanRepository`. No denormalized flag, no events, no lock tuning — simplest correct option, revisit only if the race above turns out to matter in practice.
 - `MemberJpaEntity` / `MemberRepositoryAdapter` — not created; `Member` has no persistence path yet.
-- No `POST /loans` endpoint wired to `BorrowBookUseCase` yet.
-- `GlobalRestExceptionHandler` doesn't yet handle `DomainStateException` or `MemberNotFoundException` — both are thrown by `BorrowBookUseCase` and will surface as unhandled 500s the moment an endpoint calls it.
-- No "remove/delete book" use case yet (the use case that would actually need the cross-aggregate guard discussed above).
+- No "remove/delete book" use case yet — the use case that would actually introduce the cross-aggregate guard discussed above. Nothing in `catalog` today can delete a `Book`.
 - Cosmetic: `BookConstrains` should be `BookConstraints` (missing "t") — known, not fixed.

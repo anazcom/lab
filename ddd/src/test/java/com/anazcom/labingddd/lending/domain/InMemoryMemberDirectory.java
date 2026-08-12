@@ -17,4 +17,8 @@ public class InMemoryMemberDirectory implements MemberDirectory {
   public void add(MemberId memberId, boolean canBorrow) {
     this.profiles.put(memberId, new MemberBorrowingProfile(memberId, canBorrow));
   }
+
+  public void clear() {
+    this.profiles.clear();
+  }
 }

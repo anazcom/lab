@@ -16,4 +16,8 @@ public class InMemoryBookCatalog implements BookCatalog {
   public void add(BookId bookId) {
     this.books.add(bookId);
   }
+
+  public void clear() {
+    this.books.clear();
+  }
 }

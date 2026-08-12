@@ -4,4 +4,5 @@ import com.anazcom.labingddd.catalog.domain.BookId;
 
 public interface BookCatalog {
   boolean exists(BookId bookId);
+
 }

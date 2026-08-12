@@ -1,4 +1,4 @@
-package com.anazcom.labingddd.lending.infrastructure;
+package com.anazcom.labingddd.lending.infrastructure.web;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,7 +28,7 @@ class LoanController {
     }
 
     @PostMapping
-    public ResponseEntity<BorrowBookResponse> borrowBook(@RequestBody BorrowBookRequest request) {
+    ResponseEntity<BorrowBookResponse> borrowBook(@RequestBody BorrowBookRequest request) {
         BookId bookId = new BookId(request.bookId);
         MemberId memberId = new MemberId(request.memberId);
 

@@ -16,4 +16,8 @@ public class InMemoryMemberRepository implements MemberRepository {
   public void save(Member member) {
     this.members.put(member.getId(), member);
   }
+
+  public void clear() {
+    this.members.clear();
+  }
 }

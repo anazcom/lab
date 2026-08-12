@@ -18,4 +18,8 @@ public class InMemoryLoanRepository implements LoanRepository {
   public void save(Loan loan) {
     this.loans.put(loan.getId(), loan);
   }
+
+  public void clear() {
+    this.loans.clear();
+  }
 }

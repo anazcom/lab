@@ -1,4 +1,4 @@
-package com.anazcom.labingddd.lending.infrastructure;
+package com.anazcom.labingddd.lending.infrastructure.persistance;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
