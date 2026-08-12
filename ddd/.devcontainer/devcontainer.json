@@ -1,0 +1,24 @@
+{
+  "name": "JavaLab",
+  "image": "mcr.microsoft.com/devcontainers/base:bullseye",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "installOhMyZsh": true,
+      "installOhMyZshConfig": true
+    },
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": 21,
+      "installMaven": true,
+      "mavenVersion": "3.9.16"
+    },
+    "ghcr.io/duduribeiro/devcontainer-features/neovim:1": {
+      "version": "stable"
+    },
+    "ghcr.io/devcontainers-extra/features/claude-code:1": {
+      "version": "latest"
+    }
+  },
+  "forwardPorts": [8080]
+}

@@ -1,0 +1,445 @@
+<title>Aggregate Root</title>
+<style>
+  :root {
+    --bg: #EDEEE7;
+    --surface: #F8F8F3;
+    --surface-alt: #E3E3D8;
+    --ink: #1E2530;
+    --muted: #6B6A5D;
+    --border: #C9C7B6;
+    --entity: #7A2E2E;
+    --entity-ink: #5C2222;
+    --entity-dim: #F2E2E0;
+    --value: #386158;
+    --value-ink: #2C4C45;
+    --value-dim: #E1EAE5;
+    --ref: #8A6A2E;
+    --ref-ink: #6E5322;
+    --ref-dim: #F1E6D2;
+    --code-bg: #1E2530;
+    --code-text: #E7E5D8;
+    --code-muted: #9498A8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161B;
+      --surface: #1B1E25;
+      --surface-alt: #21252D;
+      --ink: #E7E5D8;
+      --muted: #9A9C8E;
+      --border: #383B33;
+      --entity: #E0918C;
+      --entity-ink: #EAADA9;
+      --entity-dim: #2C1A1B;
+      --value: #86C4B4;
+      --value-ink: #9CD2C4;
+      --value-dim: #16302A;
+      --ref: #D9B871;
+      --ref-ink: #E4C888;
+      --ref-dim: #2E2712;
+      --code-bg: #0F1116;
+      --code-text: #E7E5D8;
+      --code-muted: #7D8091;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161B; --surface: #1B1E25; --surface-alt: #21252D;
+    --ink: #E7E5D8; --muted: #9A9C8E; --border: #383B33;
+    --entity: #E0918C; --entity-ink: #EAADA9; --entity-dim: #2C1A1B;
+    --value: #86C4B4; --value-ink: #9CD2C4; --value-dim: #16302A;
+    --ref: #D9B871; --ref-ink: #E4C888; --ref-dim: #2E2712;
+    --code-bg: #0F1116; --code-text: #E7E5D8; --code-muted: #7D8091;
+  }
+  :root[data-theme="light"] {
+    --bg: #EDEEE7; --surface: #F8F8F3; --surface-alt: #E3E3D8;
+    --ink: #1E2530; --muted: #6B6A5D; --border: #C9C7B6;
+    --entity: #7A2E2E; --entity-ink: #5C2222; --entity-dim: #F2E2E0;
+    --value: #386158; --value-ink: #2C4C45; --value-dim: #E1EAE5;
+    --ref: #8A6A2E; --ref-ink: #6E5322; --ref-dim: #F1E6D2;
+    --code-bg: #1E2530; --code-text: #E7E5D8; --code-muted: #9498A8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 64px 24px 96px;
+  }
+
+  .eyebrow {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+
+  h1 {
+    font-size: 40px;
+    line-height: 1.12;
+    font-weight: 400;
+    margin: 0 0 18px;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  h1 em { font-style: italic; color: var(--muted); font-size: 0.7em; display: block; margin-top: 4px; }
+
+  .lede {
+    font-size: 19px;
+    line-height: 1.65;
+    color: var(--ink);
+    max-width: 62ch;
+    margin: 0 0 8px;
+  }
+  .lede + .lede { margin-top: 14px; }
+  code.inline {
+    font-family: "SFMono-Regular", "Cascadia Code", ui-monospace, monospace;
+    font-size: 0.85em;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  .rule {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 44px 0;
+  }
+
+  h2 {
+    font-size: 15px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 20px;
+  }
+
+  /* ── boundary diagram ── */
+  .diagram {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: 8px;
+  }
+  .boundary {
+    flex: 1;
+    border: 2px dashed var(--entity);
+    padding: 22px 22px 20px;
+    position: relative;
+    background: var(--entity-dim);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .boundary-label {
+    position: absolute;
+    top: -12px;
+    left: 18px;
+    background: var(--bg);
+    padding: 0 8px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--entity);
+  }
+  .node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+  }
+  .node .kind {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .node.root {
+    border-left: 3px solid var(--entity);
+    font-weight: 700;
+  }
+  .node.root .kind { color: var(--entity-ink); }
+  .node.inner {
+    border-left: 3px solid var(--value);
+    margin-left: 18px;
+  }
+  .node.inner .kind { color: var(--value-ink); }
+
+  .outside {
+    flex: 0 0 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+    margin-left: 18px;
+  }
+  .ref-token {
+    border: 1px dashed var(--ref);
+    background: var(--ref-dim);
+    color: var(--ref-ink);
+    font-family: "SFMono-Regular", "Cascadia Code", ui-monospace, monospace;
+    font-size: 13px;
+    padding: 8px 12px;
+    text-align: center;
+    position: relative;
+  }
+  .ref-token::before {
+    content: "◄╌╌╌";
+    position: absolute;
+    left: -34px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: var(--ref);
+    letter-spacing: -1px;
+  }
+  .diagram-caption {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 14px 0 0;
+    line-height: 1.6;
+  }
+  .diagram-caption .sw {
+    display: inline-block;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+  .sw.entity { background: var(--entity); }
+  .sw.value { background: var(--value); }
+  .sw.ref { background: var(--ref); }
+
+  @media (max-width: 620px) {
+    .diagram { flex-direction: column; }
+    .outside { flex-direction: row; margin-left: 0; margin-top: 16px; }
+    .ref-token::before { content: "▲╌"; left: 50%; top: -22px; transform: translateX(-50%); }
+  }
+
+  pre {
+    margin: 0;
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 18px 18px;
+    overflow-x: auto;
+    font-family: "SFMono-Regular", "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
+    font-size: 13px;
+    line-height: 1.65;
+    border-top: 2px solid var(--entity);
+  }
+  .kw { color: var(--code-muted); }
+  .tok { color: var(--entity-ink); }
+  .tok2 { color: var(--ref-ink); }
+
+  .rules {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .rules li {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 4px 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .rules { padding: 0; margin: 0; }
+  .rules li:last-child { border-bottom: none; }
+  .rules .n {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--entity);
+    padding-top: 3px;
+  }
+  .rules h4 {
+    margin: 0;
+    font-size: 16.5px;
+    font-weight: 400;
+    grid-column: 2;
+  }
+  .rules p {
+    margin: 4px 0 0;
+    font-size: 14.5px;
+    color: var(--muted);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.55;
+    grid-column: 2;
+  }
+
+  .callout {
+    border: 1px solid var(--entity);
+    background: var(--entity-dim);
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .callout .label {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--entity-ink);
+  }
+  .callout p { margin: 0; font-size: 15.5px; line-height: 1.6; }
+
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 620px) { .split { grid-template-columns: 1fr; } }
+  .mini {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 16px 18px;
+  }
+  .mini .kind {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--entity);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .mini p { margin: 0; font-size: 14.5px; color: var(--muted); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.55; }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+  }
+</style>
+
+<div class="page">
+
+  <p class="eyebrow">Domain-Driven Design · Library App</p>
+  <h1>Aggregate Root<em>The boundary that owns consistency</em></h1>
+
+  <p class="lede">A <code class="inline">Book</code> and an <code class="inline">Isbn</code> tell you what things <em>are</em>. An Aggregate tells you what things must stay <strong>true together</strong> — and who's responsible for enforcing that.</p>
+
+  <p class="lede">A cluster of Entities and Value Objects that must change as one consistent unit is an <strong>Aggregate</strong>. Exactly one Entity in that cluster — the <strong>Aggregate Root</strong> — is the only door in. Nothing outside reaches past the root to edit an inner object directly; every change is a method call on the root, and the root is where the invariant actually gets checked.</p>
+
+  <hr class="rule">
+
+  <h2>A loan, drawn as a boundary</h2>
+
+  <div class="diagram">
+    <div class="boundary">
+      <span class="boundary-label">Loan aggregate</span>
+      <div class="node root"><span class="kind">Entity · Root</span>Loan <span style="color: var(--muted); font-weight: 400;">(id, status)</span></div>
+      <div class="node inner"><span class="kind">Value Object</span>LoanPeriod <span style="color: var(--muted); font-weight: 400;">(startDate, dueDate)</span></div>
+      <div class="node inner"><span class="kind">Value Object</span>LoanStatus <span style="color: var(--muted); font-weight: 400;">(ACTIVE / RETURNED / OVERDUE)</span></div>
+    </div>
+    <div class="outside">
+      <div class="ref-token">BookId</div>
+      <div class="ref-token">MemberId</div>
+    </div>
+  </div>
+  <p class="diagram-caption">
+    <span class="sw entity"></span>The root is the only entry point &nbsp;·&nbsp;
+    <span class="sw value"></span>inner Value Objects are only reachable through it &nbsp;·&nbsp;
+    <span class="sw ref"></span><code class="inline" style="background:none;padding:0;">Book</code> and <code class="inline" style="background:none;padding:0;">Member</code> are separate aggregates — <code class="inline" style="background:none;padding:0;">Loan</code> holds only their IDs, never the objects themselves.
+  </p>
+
+  <hr class="rule">
+
+  <h2>The invariant lives on the root</h2>
+  <p class="lede" style="font-size: 16.5px;">Outside code never touches <code class="inline">LoanPeriod</code> or flips the status directly. It calls a method on <code class="inline">Loan</code>, and <code class="inline">Loan</code> decides whether the request is even legal:</p>
+
+  <pre><span class="kw">class</span> <span class="tok">Loan</span> {
+    <span class="kw">private final</span> LoanId id;
+    <span class="kw">private final</span> <span class="tok2">BookId</span> bookId;      <span class="kw">// reference, not the Book itself</span>
+    <span class="kw">private final</span> <span class="tok2">MemberId</span> memberId;  <span class="kw">// same for the borrower</span>
+    <span class="kw">private</span> LoanPeriod period;
+    <span class="kw">private</span> LoanStatus status;
+
+    <span class="kw">public void</span> <span class="tok">markReturned</span>(LocalDate returnedOn) {
+        <span class="kw">if</span> (status == LoanStatus.RETURNED)
+            <span class="kw">throw new</span> IllegalStateException(
+                <span class="tok2">"Loan "</span> + id + <span class="tok2">" was already returned"</span>);
+        <span class="kw">this</span>.status = LoanStatus.RETURNED;
+    }
+}</pre>
+
+  <p class="lede" style="font-size: 16.5px; margin-top:16px;">The rule "you can't return a loan twice" has exactly one legal home: inside the object that owns <code class="inline">status</code>. Put it in a service instead, and every new caller has to remember to re-check it — and eventually one won't.</p>
+
+  <hr class="rule">
+
+  <h2>What this forces you to do</h2>
+  <ol class="rules">
+    <li>
+      <span class="n">01</span>
+      <h4>Reference other aggregates by ID only</h4>
+      <p><code class="inline">Loan</code> holds a <code class="inline">BookId</code>, never a <code class="inline">Book</code>. If it held the object, editing one aggregate could ripple into another without either root getting a say.</p>
+    </li>
+    <li>
+      <span class="n">02</span>
+      <h4>Repositories exist only for roots</h4>
+      <p>You'll write a <code class="inline">BookRepository</code> and a <code class="inline">LoanRepository</code> — never an <code class="inline">IsbnRepository</code> or a <code class="inline">LoanPeriodRepository</code>. Inner objects are only ever loaded as part of their root.</p>
+    </li>
+    <li>
+      <span class="n">03</span>
+      <h4>One aggregate, one transaction</h4>
+      <p>Saving an aggregate is one unit of consistency — typically one database transaction. Needing two aggregates to change atomically together usually means the boundary is drawn in the wrong place.</p>
+    </li>
+    <li>
+      <span class="n">04</span>
+      <h4>No public setters on inner objects</h4>
+      <p>Mutation is exposed as behavior on the root (<code class="inline">markReturned(...)</code>), not as raw field access. If it's settable from outside, the boundary has a hole in it.</p>
+    </li>
+  </ol>
+
+  <hr class="rule">
+
+  <h2>Sizing the aggregates already in play</h2>
+  <div class="split">
+    <div class="mini">
+      <span class="kind">Book — its own root</span>
+      <p><code class="inline">Book</code> doesn't need to change atomically with anything else. Small aggregate: just itself, with <code class="inline">Isbn</code> embedded as a Value Object.</p>
+    </div>
+    <div class="mini">
+      <span class="kind">Loan — a second, separate root</span>
+      <p>References <code class="inline">Book</code> and <code class="inline">Member</code> only by ID. Creating a loan never requires loading either of those aggregates fully into memory.</p>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top: 24px;">
+    <span class="label">Common mistake</span>
+    <p>Making <code class="inline">Book</code> part of the <code class="inline">Loan</code> aggregate — or worse, one giant <code class="inline">Library</code> aggregate holding every book and loan in the system. The tell: if you can name a business rule that spans two objects but doesn't actually need to be enforced <em>atomically</em>, they're probably separate aggregates that should reference each other by ID instead.</p>
+  </div>
+
+  <footer>
+    Library App in DDD — reference note · companion to <em>Entity vs. Value Object</em>
+  </footer>
+
+</div>

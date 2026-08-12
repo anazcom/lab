@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define MYSH_DEFAULT_PROMPT "mysh>"
 #define MYSH_MAX_BUFFER_SIZE 1024
@@ -123,25 +124,79 @@ void echo(char **tokens) {
   fprintf(stdout, "\n");
 }
 
+// output needs to be freed out;
+char *find_path_for(char *program) {
+
+  if (strchr(program, '/') != NULL) {
+    return access(program, X_OK) == 0 ? strdup(program) : NULL;
+  }
+
+  char *path_env = getenv("PATH");
+  if (path_env == NULL) {
+    return NULL;
+  }
+
+  char *path_copy = strdup(path_env);
+  if (path_copy == NULL) {
+    return NULL;
+  }
+
+  char candidate[MYSH_MAX_BUFFER_SIZE];
+  char *dir = strtok(path_copy, ":");
+  while (dir != NULL) {
+    snprintf(candidate, sizeof(candidate), "%s/%s", dir, program);
+    if (access(candidate, X_OK) == 0) {
+      free(path_copy);
+      return strdup(candidate);
+    }
+    dir = strtok(NULL, ":");
+  }
+
+  free(path_copy);
+  return NULL;
+}
+
+void process(char **argv) {
+
+  if (argv[0] == NULL) {
+    return;
+  }
+
+  char *file = find_path_for(argv[0]);
+  if (file == NULL) {
+    fprintf(stderr, "mysh: command not found: %s\n", argv[0]);
+    return;
+  }
+  execvp(file, argv + 1);
+  free(file);
+}
+
 int eval(char **tokens) {
-  char *part = tokens[0];
-  if (part == NULL) {
-    return 0; // nothing to do
+
+  size_t si = 0;
+
+  for (size_t i = 0; tokens[i]; i++) {
+    if (strcmp(tokens[i], "|") == 0) {
+      tokens[i] = NULL;
+      char **command = (tokens + si);
+      si = i + 1;
+
+      process(command);
+    }
   }
-  if (strcmp(part, "echo") == 0) {
-    echo(tokens + 1);
-    return 0;
-  }
+
+  process(tokens + si);
+
   return 0;
 }
 
 int main() {
-
   size_t buffer_len = MYSH_MAX_BUFFER_SIZE;
   char buffer[buffer_len];
 
   while (1) {
     printf("%s ", MYSH_DEFAULT_PROMPT);
+    fflush(stdout);
 
     int rc = read_input(buffer, buffer_len);
     if (rc < 0) {
@@ -151,7 +206,10 @@ int main() {
       continue; // line too long
     }
     char **tokens = parse(buffer);
-    eval(tokens);
+    eval(tokens); // not sure if this should use eval
+                  // in here or split the tokens in command
+                  // before.
+    free(tokens);
   }
   return 0;
 }

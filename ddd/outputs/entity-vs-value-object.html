@@ -1,0 +1,442 @@
+<title>Entity vs. Value Object</title>
+<style>
+  :root {
+    --bg: #EDEEE7;
+    --surface: #F8F8F3;
+    --surface-alt: #E3E3D8;
+    --ink: #1E2530;
+    --muted: #6B6A5D;
+    --border: #C9C7B6;
+    --entity: #7A2E2E;
+    --entity-ink: #5C2222;
+    --entity-dim: #F2E2E0;
+    --value: #386158;
+    --value-ink: #2C4C45;
+    --value-dim: #E1EAE5;
+    --code-bg: #1E2530;
+    --code-text: #E7E5D8;
+    --code-muted: #9498A8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161B;
+      --surface: #1B1E25;
+      --surface-alt: #21252D;
+      --ink: #E7E5D8;
+      --muted: #9A9C8E;
+      --border: #383B33;
+      --entity: #E0918C;
+      --entity-ink: #EAADA9;
+      --entity-dim: #2C1A1B;
+      --value: #86C4B4;
+      --value-ink: #9CD2C4;
+      --value-dim: #16302A;
+      --code-bg: #0F1116;
+      --code-text: #E7E5D8;
+      --code-muted: #7D8091;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161B; --surface: #1B1E25; --surface-alt: #21252D;
+    --ink: #E7E5D8; --muted: #9A9C8E; --border: #383B33;
+    --entity: #E0918C; --entity-ink: #EAADA9; --entity-dim: #2C1A1B;
+    --value: #86C4B4; --value-ink: #9CD2C4; --value-dim: #16302A;
+    --code-bg: #0F1116; --code-text: #E7E5D8; --code-muted: #7D8091;
+  }
+  :root[data-theme="light"] {
+    --bg: #EDEEE7; --surface: #F8F8F3; --surface-alt: #E3E3D8;
+    --ink: #1E2530; --muted: #6B6A5D; --border: #C9C7B6;
+    --entity: #7A2E2E; --entity-ink: #5C2222; --entity-dim: #F2E2E0;
+    --value: #386158; --value-ink: #2C4C45; --value-dim: #E1EAE5;
+    --code-bg: #1E2530; --code-text: #E7E5D8; --code-muted: #9498A8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  @font-face {
+    font-family: "ui-label";
+    src: local("Segoe UI"), local("Helvetica Neue");
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 64px 24px 96px;
+  }
+
+  .eyebrow {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+
+  h1 {
+    font-size: 40px;
+    line-height: 1.12;
+    font-weight: 400;
+    margin: 0 0 18px;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  h1 em { font-style: italic; color: var(--muted); font-size: 0.7em; display: block; margin-top: 4px; }
+
+  .lede {
+    font-size: 19px;
+    line-height: 1.65;
+    color: var(--ink);
+    max-width: 62ch;
+    margin: 0 0 8px;
+  }
+  .lede + .lede { margin-top: 14px; }
+
+  .rule {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 44px 0;
+  }
+
+  h2 {
+    font-size: 15px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 20px;
+  }
+
+  /* ── comparison cards ── */
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 8px;
+  }
+  @media (max-width: 640px) {
+    .cards { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent);
+    padding: 24px 22px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .card.entity { --accent: var(--entity); }
+  .card.value { --accent: var(--value); }
+
+  .card-tag {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .card h3 {
+    font-size: 24px;
+    font-weight: 400;
+    margin: -8px 0 0;
+  }
+  .card p {
+    font-size: 15.5px;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.6;
+  }
+  .card ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card li {
+    font-size: 14.5px;
+    padding-left: 16px;
+    position: relative;
+    color: var(--ink);
+  }
+  .card li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  pre {
+    margin: 0;
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 16px 16px;
+    overflow-x: auto;
+    font-family: "SFMono-Regular", "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
+    font-size: 13px;
+    line-height: 1.65;
+  }
+  .card pre { border-top: 2px solid var(--accent); }
+  .kw { color: var(--code-muted); }
+  .card.entity pre .accent-tok { color: var(--entity-ink); }
+  .card.value pre .accent-tok { color: var(--value-ink); }
+
+  /* ── comparison table ── */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  th, td {
+    text-align: left;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 700;
+    border-bottom: 2px solid var(--border);
+  }
+  tbody th {
+    font-weight: 700;
+    color: var(--muted);
+    width: 150px;
+    white-space: nowrap;
+  }
+  tbody tr:nth-child(odd) { background: var(--surface-alt); }
+  td.entity-cell { color: var(--entity-ink); }
+  td.value-cell { color: var(--value-ink); }
+
+  /* ── decision list ── */
+  .decision {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px 26px;
+  }
+  .decision ol {
+    margin: 0;
+    padding: 0 0 0 1.2em;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .decision li { font-size: 16px; line-height: 1.55; }
+  .decision .verdict {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .verdict.entity { color: var(--entity); }
+  .verdict.value { color: var(--value); }
+
+  /* ── callout ── */
+  .callout {
+    border: 1px solid var(--entity);
+    background: var(--entity-dim);
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .callout .label {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--entity-ink);
+  }
+  .callout p { margin: 0; font-size: 15.5px; line-height: 1.6; }
+  .callout code {
+    font-family: "SFMono-Regular", "Cascadia Code", ui-monospace, monospace;
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    font-size: 0.88em;
+  }
+  @media (prefers-color-scheme: dark) {
+    .callout code { background: rgba(255,255,255,0.08); }
+  }
+  :root[data-theme="dark"] .callout code { background: rgba(255,255,255,0.08); }
+  :root[data-theme="light"] .callout code { background: rgba(0,0,0,0.06); }
+
+  .examples-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+  }
+  .examples-row .grp { display: flex; align-items: baseline; gap: 8px; }
+  .examples-row .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .examples-row .dot.entity { background: var(--entity); }
+  .examples-row .dot.value { background: var(--value); }
+  .examples-row .names { color: var(--muted); }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card { transition: border-top-color 0.15s ease; }
+  }
+</style>
+
+<div class="page">
+
+  <p class="eyebrow">Domain-Driven Design · Library App</p>
+  <h1>Entity vs. Value Object<em>Two answers to “are these the same thing?”</em></h1>
+
+  <p class="lede">Every object in a domain model has to answer one question: <strong>does identity matter, or only the data?</strong> The answer sorts it into one of two buckets — and the bucket decides how you write <code style="font-family: 'SFMono-Regular', 'Cascadia Code', ui-monospace, monospace; font-size: 0.85em;">equals()</code>, whether it can mutate, and how you're allowed to store and compare it.</p>
+
+  <p class="lede">In the library app, a specific <strong>Book</strong> in the catalog needs tracking across time — someone can correct its title without it becoming a different book. Its <strong>ISBN</strong>, on the other hand, is just a 13-digit fact. Two ISBNs with the same digits aren't "different ISBNs that happen to match" — they're the same value.</p>
+
+  <hr class="rule">
+
+  <h2>Side by side</h2>
+  <div class="cards">
+
+    <div class="card entity">
+      <span class="card-tag">Entity</span>
+      <h3>Book</h3>
+      <p>Has a thread of identity that persists while its data changes. You track <em>it</em>, not its current snapshot.</p>
+      <ul>
+        <li>Equality compares the ID field only</li>
+        <li>Fields are free to mutate over its lifetime</li>
+        <li>Lives on, gets updated, not replaced</li>
+      </ul>
+      <pre><span class="kw">class</span> <span class="accent-tok">Book</span> {
+    <span class="kw">private final</span> BookId id;      <span class="kw">// identity</span>
+    <span class="kw">private</span> String title;         <span class="kw">// mutable</span>
+    <span class="kw">private</span> String author;        <span class="kw">// mutable</span>
+
+    <span class="kw">@Override</span>
+    <span class="kw">public boolean</span> <span class="accent-tok">equals</span>(Object o) {
+        <span class="kw">if</span> (!(o <span class="kw">instanceof</span> Book other))
+            <span class="kw">return false</span>;
+        <span class="kw">return</span> id.equals(other.id);
+    }
+}</pre>
+    </div>
+
+    <div class="card value">
+      <span class="card-tag">Value Object</span>
+      <h3>ISBN</h3>
+      <p>Has no identity of its own — it <em>is</em> its data. Interchangeable with any other instance holding the same value.</p>
+      <ul>
+        <li>Equality compares every field</li>
+        <li>Immutable — never edited, only replaced</li>
+        <li>Discarded and recreated freely</li>
+      </ul>
+      <pre><span class="kw">record</span> <span class="accent-tok">ISBN</span>(String value) {
+    ISBN {
+        <span class="kw">if</span> (value == <span class="kw">null</span>
+            || !value.matches(<span class="accent-tok">"\\d{13}"</span>))
+            <span class="kw">throw new</span> IllegalArgumentException(
+                <span class="accent-tok">"Invalid ISBN: "</span> + value);
+    }
+}</pre>
+    </div>
+
+  </div>
+
+  <p class="lede" style="margin-top: 20px;">A Java <code style="font-family: 'SFMono-Regular', ui-monospace, monospace; font-size: 0.85em;">record</code> isn't a coincidence here — records give you field-based <code style="font-family: 'SFMono-Regular', ui-monospace, monospace; font-size: 0.85em;">equals()</code>/<code style="font-family: 'SFMono-Regular', ui-monospace, monospace; font-size: 0.85em;">hashCode()</code> and immutability for free, which is exactly the contract a Value Object needs. It's the natural encoding for one, in modern Java.</p>
+
+  <hr class="rule">
+
+  <h2>The full comparison</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th></th><th>Entity</th><th>Value Object</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>Equality</th>
+          <td class="entity-cell">By identity (ID field)</td>
+          <td class="value-cell">By all field values</td>
+        </tr>
+        <tr>
+          <th>Mutability</th>
+          <td class="entity-cell">Mutable — state changes in place</td>
+          <td class="value-cell">Immutable — replaced, never edited</td>
+        </tr>
+        <tr>
+          <th>Lifecycle</th>
+          <td class="entity-cell">Tracked continuously over time</td>
+          <td class="value-cell">Created and discarded freely</td>
+        </tr>
+        <tr>
+          <th>Java shape</th>
+          <td class="entity-cell">Class with an ID field, identity-based <code style="font-family:inherit;">equals()</code></td>
+          <td class="value-cell">Record, or immutable class with value-based equality</td>
+        </tr>
+        <tr>
+          <th>Copies</th>
+          <td class="entity-cell">Two copies with equal fields are still distinct</td>
+          <td class="value-cell">Two copies with equal fields are the same value</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="rule">
+
+  <h2>Elsewhere in the library domain</h2>
+  <div class="examples-row">
+    <div class="grp"><span class="dot entity"></span><strong>Entities</strong> <span class="names">— Book, Member, Loan</span></div>
+    <div class="grp"><span class="dot value"></span><strong>Value Objects</strong> <span class="names">— ISBN, LoanPeriod, Money, Address</span></div>
+  </div>
+
+  <hr class="rule">
+
+  <h2>Deciding which one</h2>
+  <div class="decision">
+    <ol>
+      <li>If two instances hold identical data, must the system still be able to tell them apart? <span class="verdict entity">→ Entity.</span> A <code style="font-family: 'SFMono-Regular', ui-monospace, monospace; font-size:0.85em;">Loan</code> from Tuesday and an otherwise-identical <code style="font-family: 'SFMono-Regular', ui-monospace, monospace; font-size:0.85em;">Loan</code> from Wednesday are not the same loan.</li>
+      <li>If not — if "same data" simply <em>means</em> "same thing" — <span class="verdict value">→ Value Object.</span> There's no meaningful sense in which two <code style="font-family: 'SFMono-Regular', ui-monospace, monospace; font-size:0.85em;">ISBN("978...")</code>s are "different."</li>
+      <li>Still unsure? Ask whether the object needs to be looked up or fetched again later by some reference. If yes, it needs identity — it's an Entity.</li>
+    </ol>
+  </div>
+
+  <div class="callout" style="margin-top: 24px;">
+    <span class="label">Common mistake</span>
+    <p>Giving a Value Object its own <code>id</code> field "just in case." If you find yourself adding an ID to <code>ISBN</code> or <code>LoanPeriod</code>, that's a signal you're forcing entity-shaped machinery onto something that only ever needed to be compared by value — it adds a layer of identity-tracking the domain never asked for.</p>
+  </div>
+
+  <footer>
+    Library App in DDD — reference note · written for the Java domain model, not the persistence layer
+  </footer>
+
+</div>

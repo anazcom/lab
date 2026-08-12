@@ -1,0 +1,341 @@
+<title>Application Layer &amp; Use Case</title>
+<style>
+  :root {
+    --bg: #EDEEE7;
+    --surface: #F8F8F3;
+    --surface-alt: #E3E3D8;
+    --ink: #1E2530;
+    --muted: #6B6A5D;
+    --border: #C9C7B6;
+    --entity: #7A2E2E;
+    --entity-ink: #5C2222;
+    --entity-dim: #F2E2E0;
+    --value: #386158;
+    --value-ink: #2C4C45;
+    --value-dim: #E1EAE5;
+    --ref: #8A6A2E;
+    --ref-ink: #6E5322;
+    --ref-dim: #F1E6D2;
+    --code-bg: #1E2530;
+    --code-text: #E7E5D8;
+    --code-muted: #9498A8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161B; --surface: #1B1E25; --surface-alt: #21252D;
+      --ink: #E7E5D8; --muted: #9A9C8E; --border: #383B33;
+      --entity: #E0918C; --entity-ink: #EAADA9; --entity-dim: #2C1A1B;
+      --value: #86C4B4; --value-ink: #9CD2C4; --value-dim: #16302A;
+      --ref: #D9B871; --ref-ink: #E4C888; --ref-dim: #2E2712;
+      --code-bg: #0F1116; --code-text: #E7E5D8; --code-muted: #7D8091;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161B; --surface: #1B1E25; --surface-alt: #21252D;
+    --ink: #E7E5D8; --muted: #9A9C8E; --border: #383B33;
+    --entity: #E0918C; --entity-ink: #EAADA9; --entity-dim: #2C1A1B;
+    --value: #86C4B4; --value-ink: #9CD2C4; --value-dim: #16302A;
+    --ref: #D9B871; --ref-ink: #E4C888; --ref-dim: #2E2712;
+    --code-bg: #0F1116; --code-text: #E7E5D8; --code-muted: #7D8091;
+  }
+  :root[data-theme="light"] {
+    --bg: #EDEEE7; --surface: #F8F8F3; --surface-alt: #E3E3D8;
+    --ink: #1E2530; --muted: #6B6A5D; --border: #C9C7B6;
+    --entity: #7A2E2E; --entity-ink: #5C2222; --entity-dim: #F2E2E0;
+    --value: #386158; --value-ink: #2C4C45; --value-dim: #E1EAE5;
+    --ref: #8A6A2E; --ref-ink: #6E5322; --ref-dim: #F1E6D2;
+    --code-bg: #1E2530; --code-text: #E7E5D8; --code-muted: #9498A8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 760px; margin: 0 auto; padding: 64px 24px 96px; }
+
+  .eyebrow {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted); margin: 0 0 14px;
+  }
+  h1 {
+    font-size: 40px; line-height: 1.12; font-weight: 400; margin: 0 0 18px;
+    text-wrap: balance; letter-spacing: -0.01em;
+  }
+  h1 em { font-style: italic; color: var(--muted); font-size: 0.7em; display: block; margin-top: 4px; }
+
+  .lede { font-size: 19px; line-height: 1.65; max-width: 62ch; margin: 0 0 8px; }
+  .lede + .lede { margin-top: 14px; }
+  .lede.small { font-size: 16.5px; }
+  code.inline {
+    font-family: "SFMono-Regular", "Cascadia Code", ui-monospace, monospace;
+    font-size: 0.85em; background: var(--surface-alt); padding: 1px 5px; border-radius: 2px;
+  }
+
+  .rule { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
+
+  h2 {
+    font-size: 15px; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 20px;
+  }
+
+  /* ── flow diagram ── */
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: 10px;
+  }
+  @media (max-width: 680px) { .flow { flex-direction: column; } }
+  .flow-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    color: var(--muted);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 20px;
+  }
+  @media (max-width: 680px) { .flow-arrow { padding: 6px 0; transform: rotate(90deg); } }
+  .flow-label {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 2px; text-align: center;
+  }
+  .fnode {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 13.5px;
+    text-align: center;
+  }
+  .fnode.caller { border-style: dashed; color: var(--muted); }
+  .fnode.usecase { border-left: 3px solid var(--ref); background: var(--ref-dim); color: var(--ref-ink); font-weight: 700; }
+  .fnode.port { border-left: 3px solid var(--ref); font-family: "SFMono-Regular", ui-monospace, monospace; font-size: 12.5px; }
+  .fnode.entity { border-left: 3px solid var(--entity); color: var(--entity-ink); font-weight: 700; }
+  .diagram-caption {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 13px; color: var(--muted); margin: 16px 0 0; line-height: 1.6;
+  }
+  .diagram-caption .sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+  .sw.refc { background: var(--ref); }
+  .sw.entityc { background: var(--entity); }
+
+  pre {
+    margin: 0; background: var(--code-bg); color: var(--code-text);
+    padding: 18px; overflow-x: auto;
+    font-family: "SFMono-Regular", "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12.8px; line-height: 1.65; border-top: 2px solid var(--ref);
+  }
+  .kw { color: var(--code-muted); }
+  .tok { color: var(--ref-ink); }
+  .tok2 { color: var(--entity-ink); }
+  .bad pre { border-top-color: var(--entity); }
+  .good pre { border-top-color: var(--value); }
+
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 680px) { .compare { grid-template-columns: 1fr; } }
+  .compare .tag {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 8px 14px; border: 1px solid var(--border); border-bottom: none;
+  }
+  .bad .tag { color: var(--entity-ink); background: var(--entity-dim); border-color: var(--entity); }
+  .good .tag { color: var(--value-ink); background: var(--value-dim); border-color: var(--value); }
+  .bad pre, .good pre { border-left: 1px solid; border-right: 1px solid; border-bottom: 1px solid; }
+  .bad pre { border-color: var(--entity); }
+  .good pre { border-color: var(--value); }
+
+  .rules { padding: 0; margin: 0; }
+  .rules li {
+    list-style: none; padding: 16px 0; border-bottom: 1px solid var(--border);
+  }
+  .rules li:last-child { border-bottom: none; }
+  .rules h4 {
+    margin: 0; font-size: 16.5px; font-weight: 400;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .rules h4 .yn {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 7px;
+    flex-shrink: 0;
+  }
+  .rules li.yes h4 .yn { color: var(--value-ink); background: var(--value-dim); border: 1px solid var(--value); }
+  .rules li.no h4 .yn { color: var(--entity-ink); background: var(--entity-dim); border: 1px solid var(--entity); }
+  .rules p {
+    margin: 6px 0 0; font-size: 14.5px; color: var(--muted);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.55;
+  }
+
+  .callout {
+    border: 1px solid var(--ref); background: var(--ref-dim);
+    padding: 20px 22px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .callout .label {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ref-ink);
+  }
+  .callout p { margin: 0; font-size: 15.5px; line-height: 1.6; }
+
+  footer {
+    margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; color: var(--muted);
+  }
+</style>
+
+<div class="page">
+
+  <p class="eyebrow">Domain-Driven Design · Library App</p>
+  <h1>Application Layer<em>Where the outside world meets the domain</em></h1>
+
+  <p class="lede">Everything built so far — <code class="inline">Book</code>, <code class="inline">Loan</code>, <code class="inline">Member</code> — lives in the Domain Layer and knows nothing about who calls it or why. A <strong>Use Case</strong> is the layer just outside that: one specific action someone wants to perform, and the script that carries it out.</p>
+
+  <hr class="rule">
+
+  <h2>The shape of a request</h2>
+  <div class="flow">
+    <div class="flow-col">
+      <span class="flow-label">Caller</span>
+      <div class="fnode caller">Controller / CLI / Test</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-col">
+      <span class="flow-label">Orchestrates</span>
+      <div class="fnode usecase">BorrowBookUseCase</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-col">
+      <span class="flow-label">Port</span>
+      <div class="fnode port">BookRepository</div>
+      <div class="fnode port">MemberRepository</div>
+      <div class="fnode port">LoanRepository</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-col">
+      <span class="flow-label">Aggregates</span>
+      <div class="fnode entity">Book</div>
+      <div class="fnode entity">Member</div>
+      <div class="fnode entity">Loan</div>
+    </div>
+  </div>
+  <p class="diagram-caption">
+    <span class="sw refc"></span>the Use Case and the repository interfaces it depends on (Ports) know nothing about databases &nbsp;·&nbsp;
+    <span class="sw entityc"></span>all the actual business rules stay on the aggregates — the Use Case only calls them.
+  </p>
+
+  <hr class="rule">
+
+  <h2>A Use Case is a script, not a rulebook</h2>
+  <p class="lede small">Its job: load the aggregate(s) via a repository, call behavior methods on them, save the result. If you find an <code class="inline">if</code> deciding whether something is <em>valid</em> inside a Use Case, that rule usually escaped from where it belongs.</p>
+
+  <div class="compare" style="margin-top: 18px;">
+    <div class="bad">
+      <div class="tag">Leaks the rule</div>
+      <pre><span class="kw">if</span> (member.getStatus()
+        == MembershipStatus.SUSPENDED) {
+    <span class="kw">throw new</span> IllegalStateException(
+        <span class="tok2">"Member cannot borrow"</span>);
+}</pre>
+    </div>
+    <div class="good">
+      <div class="tag">Asks the aggregate</div>
+      <pre><span class="kw">if</span> (!member.canBorrow()) {
+    <span class="kw">throw new</span> IllegalStateException(
+        <span class="tok2">"Member cannot borrow"</span>);
+}</pre>
+    </div>
+  </div>
+  <p class="lede small" style="margin-top: 16px;">Same outcome, different owner. On the right, <em>what it means</em> to be allowed to borrow stays on <code class="inline">Member</code> — reusable everywhere, testable without a Use Case at all, exactly like you already proved when you wrote <code class="inline">canBorrow()</code>.</p>
+
+  <hr class="rule">
+
+  <h2>Repositories are Ports</h2>
+  <p class="lede small">A Use Case depends on an interface defined in the domain — never a concrete database. That interface is a <strong>Port</strong>; a real implementation (JPA, in-memory, whatever) is an <strong>Adapter</strong> that satisfies it later.</p>
+  <pre style="border-top-color: var(--ref); margin-top: 14px;"><span class="kw">public interface</span> <span class="tok">BookRepository</span> {
+    Optional&lt;Book&gt; findById(BookId id);
+    <span class="kw">void</span> save(Book book);
+}</pre>
+  <p class="lede small" style="margin-top: 16px;">This is what makes the testing question interesting: a test hands the Use Case an in-memory, <code class="inline">Map</code>-backed fake implementing the same interface. The Use Case cannot tell the difference — it only ever depended on the interface, never on how storage actually works.</p>
+
+  <hr class="rule">
+
+  <h2>Worked example — BorrowBookUseCase</h2>
+  <pre><span class="kw">public class</span> <span class="tok">BorrowBookUseCase</span> {
+    <span class="kw">private final</span> BookRepository books;
+    <span class="kw">private final</span> MemberRepository members;
+    <span class="kw">private final</span> LoanRepository loans;
+
+    <span class="kw">public</span> BorrowBookUseCase(BookRepository books,
+            MemberRepository members, LoanRepository loans) {
+        <span class="kw">this</span>.books = books;
+        <span class="kw">this</span>.members = members;
+        <span class="kw">this</span>.loans = loans;
+    }
+
+    <span class="kw">public</span> LoanId handle(BookId bookId, MemberId memberId) {
+        Book book = books.findById(bookId)
+            .orElseThrow(() -&gt; <span class="kw">new</span> IllegalArgumentException(<span class="tok2">"Book not found"</span>));
+        Member member = members.findById(memberId)
+            .orElseThrow(() -&gt; <span class="kw">new</span> IllegalArgumentException(<span class="tok2">"Member not found"</span>));
+
+        <span class="kw">if</span> (!member.canBorrow())
+            <span class="kw">throw new</span> IllegalStateException(<span class="tok2">"Member cannot borrow right now"</span>);
+        <span class="kw">if</span> (loans.hasActiveLoanForBook(bookId))
+            <span class="kw">throw new</span> IllegalStateException(<span class="tok2">"Book is already on loan"</span>);
+
+        Loan loan = <span class="kw">new</span> Loan(LoanId.generate(), bookId, memberId,
+            <span class="kw">new</span> LoanPeriod(LocalDate.now(), LocalDate.now().plusWeeks(2)));
+
+        loans.save(loan);
+        <span class="kw">return</span> loan.getId();
+    }
+}</pre>
+
+  <hr class="rule">
+
+  <h2>What belongs where</h2>
+  <ul class="rules">
+    <li class="yes">
+      <h4><span class="yn">USE CASE</span>Fetching aggregates via a repository</h4>
+      <p>Loading is orchestration — it has to happen somewhere outside the aggregate, since an aggregate can't load itself.</p>
+    </li>
+    <li class="yes">
+      <h4><span class="yn">USE CASE</span>Calling behavior methods and saving the result</h4>
+      <p><code class="inline">member.canBorrow()</code>, constructing the new <code class="inline">Loan</code>, <code class="inline">loans.save(loan)</code> — all orchestration, no decisions of its own.</p>
+    </li>
+    <li class="no">
+      <h4><span class="yn">AGGREGATE</span>Deciding whether an action is valid</h4>
+      <p>"Can this member borrow" is a business rule. It belongs on <code class="inline">Member</code>, not re-implemented as an <code class="inline">if</code> in every Use Case that needs the answer.</p>
+    </li>
+    <li class="no">
+      <h4><span class="yn">AGGREGATE</span>Mutating fields directly</h4>
+      <p>A Use Case should never do <code class="inline">loan.status = RETURNED</code> — that's exactly the raw-setter problem Aggregate Root exists to prevent, regardless of which layer is doing it.</p>
+    </li>
+  </ul>
+
+  <div class="callout" style="margin-top: 24px;">
+    <span class="label">The interesting exception — rules that span aggregates</span>
+    <p><code class="inline">loans.hasActiveLoanForBook(bookId)</code> can't live inside <code class="inline">Book</code> — <code class="inline">Book</code> doesn't know <code class="inline">Loan</code> exists, by design. "Is this book available" is a real domain rule, but an inherently cross-aggregate one, so the Use Case (or, once reused across multiple Use Cases, a <em>Domain Service</em>) is its correct home — not a fallback for a rule that couldn't find a "proper" place.</p>
+  </div>
+
+  <footer>
+    Library App in DDD — reference note · companion to <em>Entity vs. Value Object</em> and <em>Aggregate Root</em>
+  </footer>
+
+</div>
