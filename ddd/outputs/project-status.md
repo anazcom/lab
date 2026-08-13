@@ -1,6 +1,6 @@
 # Library DDD Lab — Project Status
 
-_Last updated: 2026-08-12 (afternoon)_
+_Last updated: 2026-08-13_
 
 ## Goal
 
@@ -20,7 +20,7 @@ Learn Domain-Driven Design hands-on by building a small Library application in J
 - New domain exceptions: `BookAlreadyOnLoanException`, `MemberCannotBorrowException`.
 - `BorrowBookUseCase`: checks the book exists, the member can borrow, and the book has no active loan (`hasActiveLoanForBook`) before creating a `Loan`. Full fake-based test suite (`InMemory*` fakes for `BookCatalog`, `MemberDirectory`, `LoanRepository`), 5 tests.
 - Persistence: `LoanJpaEntity` is fully mapped — `LoanStatus` via `@Enumerated(EnumType.STRING)` on the domain enum directly, `LoanPeriod` flattened into plain `start_date`/`due_date` columns (the flatten-vs-`@Embeddable` decision was resolved in favor of flattening, consistent with how `Isbn` is mapped), `bookId`/`memberId` as plain string columns (deliberately not `@ManyToOne`). `LoanRepositoryAdapter` + `SpringDataLoanRepository` (with `existsByBookIdAndStatus`) implement `LoanRepository`; `DataIntegrityViolationException` translated to `DomainRepositoryException`.
-- REST: `POST /loans` wired to `BorrowBookUseCase` via `LoanController`. Full `MockMvc` test suite (`LoanControllerTest`, 5 tests: 200 on valid ids, 400 on unknown book, 400 on unknown member, 409 when the member can't borrow, 409 when the book already has an active loan) — same no-mocks style as `BookControllerTest`, but since `@WebMvcTest` only boots the web slice (it won't auto-create the `@Service` `BorrowBookUseCase` or find bean definitions for the `BookCatalog`/`MemberDirectory`/`LoanRepository` ports), the test's `@TestConfiguration` explicitly declares `InMemoryBookCatalog`/`InMemoryMemberDirectory`/`InMemoryLoanRepository` as beans and wires a real `BorrowBookUseCase` on top of them. The three `InMemory*` fakes (originally written for `BorrowBookUseCaseTest`) gained a `clear()` method so they can be reset per test and reused across both test classes.
+- REST: `POST /loans` wired to `BorrowBookUseCase` via `LoanController`. `GET /loans/{id}` reads directly from `LoanRepository` (same pure-read shape as `BookController`, no use case needed), 404 via a new `LoanNotFoundException`. Full `MockMvc` test suite (`LoanControllerTest`, 7 tests: 200/400/400/409/409 on the borrow flow, 404 on an unknown loan, 200 on a found loan) — same no-mocks style as `BookControllerTest`, but since `@WebMvcTest` only boots the web slice (it won't auto-create the `@Service` `BorrowBookUseCase` or find bean definitions for the `BookCatalog`/`MemberDirectory`/`LoanRepository` ports), the test's `@TestConfiguration` explicitly declares `InMemoryBookCatalog`/`InMemoryMemberDirectory`/`InMemoryLoanRepository` as beans and wires a real `BorrowBookUseCase` on top of them. The three `InMemory*` fakes (originally written for `BorrowBookUseCaseTest`) gained a `clear()` method so they can be reset per test and reused across both test classes.
 
 **Member — domain modeled only, not yet persisted**
 - `Member` aggregate, `MemberId`, `Email` (value object with a corrected validation regex), `MembershipStatus`, `suspend()`/`reactivate()`/`canBorrow()`.
@@ -29,13 +29,12 @@ Learn Domain-Driven Design hands-on by building a small Library application in J
 **Cross-cutting**
 - `shared.domain.Ids` — shared non-blank validation for all ID value objects.
 - `shared.domain.DomainValidationException` / `DomainStateException` — replaced raw `IllegalArgumentException`/`IllegalStateException` across the whole domain, so the domain layer stays framework-free while still expressing *why* something failed.
-- `shared.infrastructure.GlobalRestExceptionHandler` (`@RestControllerAdvice`) — translates domain exceptions to `ProblemDetail` responses: `BookNotFoundException`/`MemberNotFoundException` → 404, `BookAlreadyOnLoanException`/`MemberCannotBorrowException` → 409, `DomainValidationException`/`DomainStateException` → 400, `DomainRepositoryException` and any other uncaught `Exception` → 500.
+- `shared.infrastructure.GlobalRestExceptionHandler` (`@RestControllerAdvice`) — translates domain exceptions to `ProblemDetail` responses: `BookNotFoundException`/`MemberNotFoundException`/`LoanNotFoundException` → 404, `BookAlreadyOnLoanException`/`MemberCannotBorrowException` → 409, `DomainValidationException`/`DomainStateException` → 400, `DomainRepositoryException` and any other uncaught `Exception` → 500.
 - `ArchitectureTests` (ArchUnit) — fails the build if anything in `..domain..` depends on Spring/Jakarta persistence packages.
-- 17 tests passing: `ArchitectureTests` (2), `BookControllerTest` (2), `EmailTest` (3), `BorrowBookUseCaseTest` (5), `LoanControllerTest` (5). (Previous count of 13 was wrong — `BookControllerTest` has 2 `@Test` methods, not 3.)
+- 19 tests passing: `ArchitectureTests` (2), `BookControllerTest` (2), `EmailTest` (3), `BorrowBookUseCaseTest` (5), `LoanControllerTest` (7).
 
 ## Pending / In Progress
 
-- **No `GET /loans` endpoint** (or any read path for loans).
 - **No "return book" use case.** `Loan.markReturned()` exists on the aggregate but is currently unreachable from any use case or endpoint.
 - **Foreign key enforcement — decision resolved: no DB-level FK, application-level guard only.** `Loan → Book`/`Loan → Member` cross both aggregate and bounded-context boundaries, and cross-aggregate invariants are a DDD application-layer responsibility, not something the schema should enforce — so no `@ManyToOne`/`@JoinColumn(foreignKey=...)` shadow mapping and no hand-written `schema.sql` are planned. Not implemented yet because there's nothing to guard: no "remove book" use case exists at all (see below), so no path can currently orphan a `Loan`.
   - **Known tradeoff of skipping the DB backstop:** once a "remove book" use case exists, a naive check-then-act guard (`hasActiveLoanForBook` before delete) has a TOCTOU race — a `Loan` could be created between the check and the delete, with no FK to catch it. Not closing this race for now (acceptable for a single-user learning app); revisit if it ever matters. Options considered, for when it does:

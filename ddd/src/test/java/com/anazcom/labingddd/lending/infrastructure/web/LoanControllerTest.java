@@ -1,7 +1,10 @@
 package com.anazcom.labingddd.lending.infrastructure.web;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +21,9 @@ import com.anazcom.labingddd.lending.domain.BookCatalog;
 import com.anazcom.labingddd.lending.domain.InMemoryBookCatalog;
 import com.anazcom.labingddd.lending.domain.InMemoryLoanRepository;
 import com.anazcom.labingddd.lending.domain.InMemoryMemberDirectory;
+import com.anazcom.labingddd.lending.domain.Loan;
+import com.anazcom.labingddd.lending.domain.LoanId;
+import com.anazcom.labingddd.lending.domain.LoanPeriod;
 import com.anazcom.labingddd.lending.domain.LoanRepository;
 import com.anazcom.labingddd.lending.domain.MemberDirectory;
 import com.anazcom.labingddd.member.domain.MemberId;
@@ -154,5 +160,26 @@ class LoanControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request2)))
         .andExpect(status().isConflict());
+  }
+
+  @Test
+  void shouldGetNotFound_whenLoanNotFound() throws Exception {
+    LoanId loanId = LoanId.generate();
+
+    mvc.perform(
+        get("/loans/{id}", loanId.value()))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void shouldGetOk_whenLoanFound() throws Exception {
+    BookId bookId = BookId.generate();
+    MemberId memberId = MemberId.generate();
+    LoanId loanId = LoanId.generate();
+    Loan loan = new Loan(loanId, bookId, memberId, LoanPeriod.standard(LocalDate.now()));
+    loanRepository.save(loan);
+
+    mvc.perform(get("/loans/{id}", loanId.value()))
+        .andExpect(status().isOk());
   }
 }

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.anazcom.labingddd.catalog.domain.BookNotFoundException;
 import com.anazcom.labingddd.lending.domain.BookAlreadyOnLoanException;
+import com.anazcom.labingddd.lending.domain.LoanNotFoundException;
 import com.anazcom.labingddd.lending.domain.MemberCannotBorrowException;
 import com.anazcom.labingddd.member.domain.MemberNotFoundException;
 import com.anazcom.labingddd.shared.domain.DomainRepositoryException;
@@ -16,7 +17,7 @@ import com.anazcom.labingddd.shared.domain.DomainValidationException;
 @RestControllerAdvice
 class GlobalRestExceptionHandler {
 
-  @ExceptionHandler({ BookNotFoundException.class, MemberNotFoundException.class })
+  @ExceptionHandler({ BookNotFoundException.class, MemberNotFoundException.class, LoanNotFoundException.class })
   ProblemDetail handleNotFound(RuntimeException exc) {
     return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exc.getMessage());
   }

@@ -13,12 +13,16 @@ public class Loan {
   private LoanStatus status;
   private LoanPeriod period;
 
-  public Loan(LoanId id, BookId bookId, MemberId memberId, LoanPeriod period) {
+  public Loan(LoanId id, BookId bookId, MemberId memberId, LoanPeriod period, LoanStatus loanStatus) {
     this.id = id;
     this.bookId = bookId;
     this.memberId = memberId;
-    this.status = LoanStatus.ACTIVE;
     this.period = period;
+    this.status = loanStatus;
+  }
+
+  public Loan(LoanId id, BookId bookId, MemberId memberId, LoanPeriod period) {
+    this(id, bookId, memberId, period, LoanStatus.ACTIVE);
   }
 
   public LoanId getId() {
