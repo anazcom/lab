@@ -1,4 +1,4 @@
-package com.anazcom.labingddd.shared.infrastructure;
+package com.anazcom.labingddd.shared.infrastructure.web;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
